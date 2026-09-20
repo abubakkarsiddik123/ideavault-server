@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 8080;
 const uri = process.env.MONGODB_URI;
@@ -27,10 +27,27 @@ async function run() {
     const db = client.db("ideavaultDB");
     const ideasCollection = db.collection("ideas");
 
-    app.get("/ideas", async (req, res) => {
+    app.get("/idea", async (req, res) => {
       const result = await ideasCollection.find().toArray();
       res.send(result);
     });
+
+    app.get("/idea/:id",async(req, res)=>{
+      const {id} = req.params
+      const query = {
+        _id:new ObjectId(id)
+      } 
+      const result = await ideasCollection.findOne(query)
+      res.send(result)
+    })
+
+
+    app.post("/idea" , async (req, res)=>{
+      const data = req.body
+      const result = await ideasCollection.insertOne(data)
+      res.send(result);
+    })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
