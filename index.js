@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 require("dotenv").config();
 const port = process.env.PORT || 8080;
 const uri = process.env.MONGODB_URI;
@@ -12,6 +13,37 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+
+const verifyToken = async (req, res, next) => {
+  const authHeaders = req?.headers.authorization;
+
+  if (!authHeaders) {
+    return res.status(401).json({ message: "unauthorization" });
+  }
+  const token = authHeaders.split(" ")[1];
+  // console.log(token, "token");
+  if (!token) {
+    return res.status(401).json({ message: "unauthorization" });
+  }
+
+  try {
+  const { payload } = await jwtVerify(token, JWKS);
+
+  // console.log(payload, "payload");
+
+  req.user = payload;
+
+  next();
+} catch (error) {
+  console.log(error);
+
+  return res.status(403).json({
+    message: "Forbidden",
+  });
+}
+};
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -32,22 +64,32 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/idea/:id",async(req, res)=>{
-      const {id} = req.params
+    app.get("/idea/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
       const query = {
-        _id:new ObjectId(id)
-      } 
-      const result = await ideasCollection.findOne(query)
-      res.send(result)
-    })
-
-
-    app.post("/idea" , async (req, res)=>{
-      const data = req.body
-      const result = await ideasCollection.insertOne(data)
+        _id: new ObjectId(id),
+      };
+      const result = await ideasCollection.findOne(query);
       res.send(result);
-    })
+    });
 
+app.get("/my-idea", verifyToken, async (req, res) => {
+  const userId = req.user.sub;
+
+  console.log("User ID:", userId);
+
+  const result = await ideasCollection
+    .find({ userId: userId })
+    .toArray();
+
+  res.json(result);
+});
+
+    app.post("/idea", async (req, res) => {
+      const data = req.body;
+      const result = await ideasCollection.insertOne(data);
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
