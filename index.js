@@ -94,6 +94,26 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/my-idea/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const userId = req.user.sub;
+
+      const updateData = req.body;
+      console.log(updateData);
+
+      const result = await ideasCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+          userId,
+        },
+        {
+          $set: updateData,
+        },
+      );
+
+      res.send(result);
+    });
+
     app.post("/idea", async (req, res) => {
       const data = req.body;
       const result = await ideasCollection.insertOne(data);
