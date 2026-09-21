@@ -29,20 +29,20 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-  const { payload } = await jwtVerify(token, JWKS);
+    const { payload } = await jwtVerify(token, JWKS);
 
-  // console.log(payload, "payload");
+    // console.log(payload, "payload");
 
-  req.user = payload;
+    req.user = payload;
 
-  next();
-} catch (error) {
-  console.log(error);
+    next();
+  } catch (error) {
+    console.log(error);
 
-  return res.status(403).json({
-    message: "Forbidden",
-  });
-}
+    return res.status(403).json({
+      message: "Forbidden",
+    });
+  }
 };
 
 const client = new MongoClient(uri, {
@@ -73,17 +73,26 @@ async function run() {
       res.send(result);
     });
 
-app.get("/my-idea", verifyToken, async (req, res) => {
-  const userId = req.user.sub;
+    app.get("/my-idea", verifyToken, async (req, res) => {
+      const userId = req.user.sub;
 
-  console.log("User ID:", userId);
+      console.log("User ID:", userId);
 
-  const result = await ideasCollection
-    .find({ userId: userId })
-    .toArray();
+      const result = await ideasCollection.find({ userId: userId }).toArray();
 
-  res.json(result);
-});
+      res.json(result);
+    });
+    app.delete("/idea/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const userId = req.user.sub;
+
+      const result = await ideasCollection.deleteOne({
+        _id: new ObjectId(id),
+        userId: userId,
+      });
+
+      res.send(result);
+    });
 
     app.post("/idea", async (req, res) => {
       const data = req.body;
