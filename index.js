@@ -61,7 +61,22 @@ async function run() {
     const commentsCollection = db.collection("comments");
 
     app.get("/idea", async (req, res) => {
-      const result = await ideasCollection.find().toArray();
+      const { search, category } = req.query;
+
+      const query = {};
+
+      if (search) {
+        query.title = {
+          $regex: search,
+          $options: "i",
+        };
+      }
+      if (category) {
+        query.category = category;
+      }
+
+      const result = await ideasCollection.find(query).toArray();
+
       res.send(result);
     });
 
@@ -100,7 +115,6 @@ async function run() {
       const userId = req.user.sub;
 
       const updateData = req.body;
-      console.log(updateData);
 
       const result = await ideasCollection.updateOne(
         {
@@ -124,10 +138,13 @@ async function run() {
     app.post("/comments", verifyToken, async (req, res) => {
       const { ideaId, comment } = req.body;
 
-      const userId = req.user.sub;
+      const idea = await ideasCollection.findOne({
+        _id: new ObjectId(ideaId),
+      });
 
       const newComment = {
         ideaId,
+        ideaTitle: idea.title,
         userId: req.user.sub,
         name: req.user.name,
         image: req.user.image,
@@ -139,7 +156,6 @@ async function run() {
 
       res.send(result);
     });
-
     app.get("/comments/:ideaId", async (req, res) => {
       const { ideaId } = req.params;
 
@@ -175,7 +191,22 @@ async function run() {
       });
       res.send(result);
     });
-    
+    app.get("/my-comments", verifyToken, async (req, res) => {
+      console.log("🔥 /my-comments route called");
+
+      const userId = req.user.sub;
+
+      console.log("User ID:", userId);
+
+      const result = await commentsCollection
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      console.log("My Comments:", result);
+
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
