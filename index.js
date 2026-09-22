@@ -60,6 +60,11 @@ async function run() {
     const ideasCollection = db.collection("ideas");
     const commentsCollection = db.collection("comments");
 
+    app.post("/idea", async (req, res) => {
+      const data = req.body;
+      const result = await ideasCollection.insertOne(data);
+      res.send(result);
+    });
     app.get("/idea", async (req, res) => {
       const { search, category } = req.query;
 
@@ -126,12 +131,6 @@ async function run() {
         },
       );
 
-      res.send(result);
-    });
-
-    app.post("/idea", async (req, res) => {
-      const data = req.body;
-      const result = await ideasCollection.insertOne(data);
       res.send(result);
     });
 
@@ -204,6 +203,16 @@ async function run() {
         .toArray();
 
       console.log("My Comments:", result);
+
+      res.send(result);
+    });
+
+    app.get("/trending-ideas", async (req, res) => {
+      const result = await ideasCollection
+        .find()
+        .sort({ _id: 1 })
+        .limit(6)
+        .toArray();
 
       res.send(result);
     });
