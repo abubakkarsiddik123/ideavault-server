@@ -58,6 +58,7 @@ async function run() {
 
     const db = client.db("ideavaultDB");
     const ideasCollection = db.collection("ideas");
+    const commentsCollection = db.collection("comments");
 
     app.get("/idea", async (req, res) => {
       const result = await ideasCollection.find().toArray();
@@ -119,6 +120,25 @@ async function run() {
       const result = await ideasCollection.insertOne(data);
       res.send(result);
     });
+
+    app.post("/comments", verifyToken, async (req, res) => {
+      const { ideaId, comment } = req.body;
+
+      const userId = req.user.sub;
+
+      const newComment = {
+        ideaId,
+        userId,
+        comment,
+        createdAt: new Date(),
+      };
+
+      const result = await commentsCollection.insertOne(newComment);
+
+      res.send(result);
+    });
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
