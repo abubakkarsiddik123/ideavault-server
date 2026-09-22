@@ -128,7 +128,9 @@ async function run() {
 
       const newComment = {
         ideaId,
-        userId,
+        userId: req.user.sub,
+        name: req.user.name,
+        image: req.user.image,
         comment,
         createdAt: new Date(),
       };
@@ -138,7 +140,42 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/comments/:ideaId", async (req, res) => {
+      const { ideaId } = req.params;
 
+      const result = await commentsCollection
+        .find({ ideaId })
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      res.send(result);
+    });
+
+    app.patch("/comments/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { comment } = req.body;
+      const result = await commentsCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: {
+            comment: comment.trim(),
+            updatedAt: new Date(),
+          },
+        },
+      );
+
+      res.send(result);
+    });
+    app.delete("/comments/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const result = await commentsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
