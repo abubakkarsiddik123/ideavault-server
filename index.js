@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
 
 const verifyToken = async (req, res, next) => {
   const authHeaders = req?.headers.authorization;
@@ -54,7 +54,7 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("ideavaultDB");
     const ideasCollection = db.collection("ideas");
@@ -239,7 +239,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
