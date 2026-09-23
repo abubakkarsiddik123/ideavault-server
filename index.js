@@ -7,14 +7,22 @@ require("dotenv").config();
 const port = process.env.PORT || 8080;
 const uri = process.env.MONGODB_URI;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://ideavault-ecru.vercel.app"],
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
 const verifyToken = async (req, res, next) => {
   const authHeaders = req?.headers.authorization;
