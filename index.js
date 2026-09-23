@@ -62,7 +62,16 @@ async function run() {
 
     app.post("/idea", async (req, res) => {
       const data = req.body;
+      const { title } = data;
+
+      if (!title || !title.trim()) {
+        return res.status(400).send({
+          message: "Idea title is required",
+        });
+      }
+
       const result = await ideasCollection.insertOne(data);
+
       res.send(result);
     });
     app.get("/idea", async (req, res) => {
@@ -117,6 +126,7 @@ async function run() {
 
     app.patch("/my-idea/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
+
       const userId = req.user.sub;
 
       const updateData = req.body;
@@ -130,6 +140,18 @@ async function run() {
           $set: updateData,
         },
       );
+      if (updateData.title) {
+        await commentsCollection.updateMany(
+          {
+            ideaId: id,
+          },
+          {
+            $set: {
+              ideaTitle: updateData.title,
+            },
+          },
+        );
+      }
 
       res.send(result);
     });
